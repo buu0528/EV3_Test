@@ -31,7 +31,7 @@ namespace EV3_Test
         // 実行時間を保持する
         private Int32 time = 0;
         // 実行間隔[ミリ秒]
-        private double tick = 10.0;
+        private double tick = 100.0;
         // 走っているかどうか
         private bool fRun = false;
         // 方向（表示用）
@@ -46,7 +46,7 @@ namespace EV3_Test
         }
 
         // ウィンドウが開かれた時の処理
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             Dispatcher.Invoke(new Action(async () =>
 			{
@@ -66,6 +66,17 @@ namespace EV3_Test
 
             // EV3の機体状態（センサの値など）が変更された時に呼び出されるメソッド
             brick.BrickChanged += OnBrickChanged;
+
+            // モーターの設定
+            await brick.DirectCommand.StopMotorAsync(OutputPort.All, false);
+
+            // ウィンドウタイトルにEV3のファームウェアバージョンを表示
+            MainWindow1.Title = await brick.DirectCommand.GetFirmwareVersionAsync();
+
+            // 起動音
+            await brick.DirectCommand.PlayToneAsync(1, 987, 50);
+            System.Threading.Thread.Sleep(50);
+            await brick.DirectCommand.PlayToneAsync(1, 1319, 200);
         }
 
         // ウィンドウが閉じられた時の処理
@@ -81,7 +92,16 @@ namespace EV3_Test
         // EV3の状況変更時に起こるイベント
         private void OnBrickChanged(object sender, BrickChangedEventArgs e)
         {
-            //Debug.WriteLine(e.Ports.ToString());
+            if (!fRun)
+            {
+                // ラベルに表示されるテキストの更新
+                SensorValue.Content = "Timer: " + time.ToString() + "\n" +
+                    "Touch: " + brick.Ports[InputPort.One].SIValue.ToString() + "\n" +
+                    "Color: " + brick.Ports[InputPort.Two].RawValue.ToString() + "\n" +
+                    "NxtLight: " + brick.Ports[InputPort.Three].RawValue.ToString() + "\n" +
+                    "Ultrasonic: " + brick.Ports[InputPort.Four].RawValue.ToString() + "\n" +
+                    "Direction: " + direction;
+            }
         }
 
         // ボタンが押された時
@@ -131,15 +151,15 @@ namespace EV3_Test
             {
                 if (light > 10)
                 {
-                    brick.BatchCommand.TurnMotorAtSpeedForTime(OutputPort.A, 60, 10, false);
-                    brick.BatchCommand.TurnMotorAtSpeedForTime(OutputPort.B, 30, 10, false);
+                    await brick.DirectCommand.TurnMotorAtSpeedForTimeAsync(OutputPort.A, 30, 20, false);
+                    //await brick.DirectCommand.TurnMotorAtSpeedForTimeAsync(OutputPort.B, 20, 10, false);
                     //Debug.WriteLine("Right");
                     direction = "Right";
                 }
                 else //if (light < 6)
                 {
-                    brick.BatchCommand.TurnMotorAtSpeedForTime(OutputPort.A, 30, 10, false);
-                    brick.BatchCommand.TurnMotorAtSpeedForTime(OutputPort.B, 60, 10, false);
+                    //await brick.DirectCommand.TurnMotorAtSpeedForTimeAsync(OutputPort.A, 30, 10, false);
+                    await brick.DirectCommand.TurnMotorAtSpeedForTimeAsync(OutputPort.B, 30, 20, false);
                     //Debug.WriteLine("Left");
                     direction = "Left";
                 }
@@ -149,7 +169,7 @@ namespace EV3_Test
                     brick.BatchCommand.TurnMotorAtSpeedForTime(OutputPort.A, 30, 10, false);
                     brick.BatchCommand.TurnMotorAtSpeedForTime(OutputPort.B, 30, 10, false);
                 }*/
-                await brick.BatchCommand.SendCommandAsync();
+                //await brick.BatchCommand.SendCommandAsync();
             }
         }
 
@@ -158,7 +178,7 @@ namespace EV3_Test
         {
             if (time%2 == 0)
             {
-                brick.BatchCommand.TurnMotorAtSpeedForTime(OutputPort.A, -50, 10, false);
+                brick.BatchCommand.TurnMotorAtSpeedForTime(OutputPort.A, 50, 10, false);
                 //brick.BatchCommand.TurnMotorAtSpeedForTime(OutputPort.B, 20, 10, false);
                 //Debug.WriteLine("Right");
                 direction = "Right";
@@ -166,7 +186,7 @@ namespace EV3_Test
             else
             {
                 //brick.BatchCommand.TurnMotorAtSpeedForTime(OutputPort.A, 20, 10, false);
-                brick.BatchCommand.TurnMotorAtSpeedForTime(OutputPort.B, -50, 10, false);
+                brick.BatchCommand.TurnMotorAtSpeedForTime(OutputPort.B, 50, 10, false);
                 //Debug.WriteLine("Left");
                 direction = "Left";
             }
