@@ -36,6 +36,10 @@ namespace EV3_Test
         private bool fRun = false;
         // 方向（表示用）
         private String direction = "None";
+        // コースの色（キャリブレーションで設定可能）
+        private double colorBlack = 3;
+        private double colorWhite = 77;
+        private double colorMiddle;
 
         public MainWindow()
         {
@@ -77,6 +81,10 @@ namespace EV3_Test
             await brick.DirectCommand.PlayToneAsync(1, 987, 50);
             System.Threading.Thread.Sleep(50);
             await brick.DirectCommand.PlayToneAsync(1, 1319, 200);
+
+            // 中間色設定、表示
+            colorMiddle = colorBlack + ((colorWhite - colorBlack) / 2);
+            CalibrateValueLabel.Content = "BL: " + colorBlack.ToString() + " HW: " + colorWhite.ToString() + " MD: " + ((int)colorMiddle).ToString();
         }
 
         // ウィンドウが閉じられた時の処理
@@ -92,7 +100,7 @@ namespace EV3_Test
         // EV3の状況変更時に起こるイベント
         private void OnBrickChanged(object sender, BrickChangedEventArgs e)
         {
-            if (!fRun)
+            if (!fRun && brick != null)
             {
                 // ラベルに表示されるテキストの更新
                 SensorValue.Content = "Timer: " + time.ToString() + "\n" +
@@ -149,17 +157,18 @@ namespace EV3_Test
             float light = brick.Ports[InputPort.Two].SIValue;
             if (ultrasonic > 50 || !(ultrasonic < 0))
             {
-                if (light > 10)
+                if (light > colorMiddle)
                 {
-                    await brick.DirectCommand.TurnMotorAtSpeedForTimeAsync(OutputPort.A, 30, 20, false);
+                    brick.BatchCommand.TurnMotorAtPowerForTime(OutputPort.A, 40, 100, false);
+                    brick.BatchCommand.TurnMotorAtPowerForTime(OutputPort.B, 20, 100, false);
                     //await brick.DirectCommand.TurnMotorAtSpeedForTimeAsync(OutputPort.B, 20, 10, false);
                     //Debug.WriteLine("Right");
                     direction = "Right";
                 }
                 else //if (light < 6)
                 {
-                    //await brick.DirectCommand.TurnMotorAtSpeedForTimeAsync(OutputPort.A, 30, 10, false);
-                    await brick.DirectCommand.TurnMotorAtSpeedForTimeAsync(OutputPort.B, 30, 20, false);
+                    brick.BatchCommand.TurnMotorAtPowerForTime(OutputPort.A, 20, 100, false);
+                    brick.BatchCommand.TurnMotorAtPowerForTime(OutputPort.B, 40, 100, false);
                     //Debug.WriteLine("Left");
                     direction = "Left";
                 }
@@ -169,7 +178,7 @@ namespace EV3_Test
                     brick.BatchCommand.TurnMotorAtSpeedForTime(OutputPort.A, 30, 10, false);
                     brick.BatchCommand.TurnMotorAtSpeedForTime(OutputPort.B, 30, 10, false);
                 }*/
-                //await brick.BatchCommand.SendCommandAsync();
+                await brick.BatchCommand.SendCommandAsync();
             }
         }
 
@@ -191,6 +200,20 @@ namespace EV3_Test
                 direction = "Left";
             }
             await brick.BatchCommand.SendCommandAsync();
+        }
+
+        private void CalibrateButton_Click(object sender, RoutedEventArgs e)
+        {
+            // 値取得、ラベルへの反映
+            MessageBox.Show("黒色にセンサーを近づけて、OKをクリックしてください。");
+            colorBlack = brick.Ports[InputPort.Two].SIValue;
+            MessageBox.Show("白色にセンサーを近づけて、OKをクリックしてください。");
+            colorWhite = brick.Ports[InputPort.Two].SIValue;
+
+            // 中間値算出
+            colorMiddle = colorBlack + ((colorWhite - colorBlack) / 2);
+            // 表示
+            CalibrateValueLabel.Content = "BL: " + colorBlack.ToString() + " HW: " + colorWhite.ToString() + " MD: " + ((int)colorMiddle).ToString();
         }
     }
 }

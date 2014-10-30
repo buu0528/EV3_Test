@@ -6,6 +6,8 @@
     <Grid>
         <Button x:Name="GoForward" Content="Start" HorizontalAlignment="Left" VerticalAlignment="Top" Width="150" Height="50" FontSize="30" Click="GoForward_Click"/>
         <Label x:Name="SensorValue" Content="Label" HorizontalAlignment="Right" VerticalAlignment="Top" FontSize="40"/>
+        <Button x:Name="CalibrateButton" Content="Calibration" HorizontalAlignment="Left" VerticalAlignment="Top" Width="150" Margin="0,50,0,0" Click="CalibrateButton_Click"/>
+        <Label x:Name="CalibrateValueLabel" Content="" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,69,0,0" Width="150"/>
 
     </Grid>
 </Window>
